@@ -1,0 +1,21 @@
+{{- define "ops360lib.service.tpl" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Chart.Name }}
+    suite: ops360
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.k8sNamespace | default "ops360" }}
+spec:
+  ports:
+    {{- $ports := .Values.servicePorts | default list -}}
+    {{- range $ports }}
+    - name: {{ .name  }}
+      port: {{ .port }}
+      protocol: {{ default "TCP" .protocol }}
+    {{- end }}
+  selector:
+    app: {{ .Chart.Name }}
+  type: ClusterIP
+{{- end -}}

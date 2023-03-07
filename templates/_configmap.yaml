@@ -1,0 +1,14 @@
+{{- define "ops360lib.configmap.tpl" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "<namespace>.fullname" . }}
+  labels:
+    {{- include "ops360lib.labels" . | nindent 4 }}
+data:
+{{- range $path, $bytes := .Files.Glob "config/*" }}
+  {{- $key := replace $path "config/" "" | replace "/" "_" | trimSuffix ".yaml" | trimSuffix ".yml" }}
+  {{- $val := toString $bytes | quote }}
+  {{- printf "%s: %s\n" $key $val | nindent 2 }}
+{{- end }}
+{{- end -}}

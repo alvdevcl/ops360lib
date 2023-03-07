@@ -1,0 +1,21 @@
+{{- define "ops360lib.ingress-route.tpl" -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Values.ingress.name }}
+  namespace: {{ .Values.ingress.namespace }}
+  annotations:
+{{ toYaml .Values.ingress.annotations | indent 4 }}
+spec:
+  entryPoints:
+    - web
+  routes:
+{{- range $route := .Values.routes }}
+    - match: Host(`{{ $route.host }}`) && PathPrefix(`{{ $route.path }}`)
+      kind: Rule
+      middlewares:
+        - name: {{ $route.middleware }}
+      services:
+        - name: {{ $route.service }}
+          port: {{ $route.port }}
+{{- end }}

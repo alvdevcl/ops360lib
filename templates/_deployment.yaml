@@ -1,0 +1,65 @@
+{{- define "ops360lib.deployment.tpl" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Chart.Name }}
+    suite: ops360
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.k8s_namespace | default "ops360" }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ randAlphaNum 5 | quote }}
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image }}
+          env:
+          {{- range .Values.secretEntries }}
+            - name: {{ . | upper }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secretName }}
+                  key: {{ . }}
+          {{- end }}
+          ports:
+            {{- range .Values.servicePorts }}
+            - name: {{ .name }}
+              containerPort: {{ .port }}
+              protocol: {{ default "TCP" .protocol }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ default "/" .Values.serviceHealthPath }}
+              port: {{ default "http" .Values.readinessPortName }}
+            {{- if .Values.probeCookie }}
+              httpHeaders:
+              - name: Cookie
+                value: {{ default "" .Values.probeCookie }}
+            {{- end }}
+            initialDelaySeconds: {{ default 15 .Values.initialDelaySeconds }}
+            periodSeconds: 30
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.livenessPortName | default "http" }}
+            initialDelaySeconds: {{ default 15 .Values.initialDelaySeconds }}
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: {{ default "1" .Values.serviceCpu | quote }}
+              memory: {{ default "2Gi" .Values.serviceMemory | quote }}
+            limits:
+              cpu: {{ default "1" .Values.serviceCpu | quote }}
+              memory: {{ default "2Gi" .Values.serviceMemory | quote }}
+{{- include "ops360lib.volumeMounts.tpl" . | indent 8 }}
+{{- include "ops360lib.volumes.tpl" . | indent 4 }}
+{{- end -}}

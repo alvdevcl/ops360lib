@@ -1,0 +1,26 @@
+{{- define "ops360lib.ingress.tpl" -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.name }}
+  namespace: {{ .Values.k8s_namespace | default "ops360" }}
+  labels:
+    app: {{ .Chart.Name }}
+    suite: ops360
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+    traefik.ingress.kubernetes.io/router.entrypoints: http
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port:
+                  name: {{ .Values.servicePorts[0].name }}
+{{- end -}}
